@@ -25,7 +25,6 @@ RUN apt-get update && apt-get install -y \
     git \                      # Required for installing Rchelsa from Git
     curl                       # Ensures web requests work properly
 
-
 # Copy the R scripts and data files into the container
 COPY . /home/rstudio/vegetation_donana
 
@@ -38,8 +37,6 @@ RUN Rscript load_packages.R
 # Set the default command to run an R script when the container starts
 CMD ["Rscript", "load_packages.R"]
 
-
-
 # RUN Rscript main_analyses_donana.r
 # Install Shiny
 #RUN R -e "install.packages('shiny')"
@@ -50,8 +47,5 @@ CMD ["Rscript", "load_packages.R"]
 # Expose the Shiny app port
 #EXPOSE 3838
 
-
-
 # Run the Shiny app
 #CMD ["R", "-e", "shiny::runApp('/home/rstudio/vegetation_donana/shiny_app', host = '0.0.0.0', port = 3838)"]
-
