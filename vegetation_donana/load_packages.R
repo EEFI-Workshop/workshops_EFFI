@@ -43,14 +43,19 @@ required_packages <- c("tidyverse",
                        "ranger",
                        "mgcv",
                        "shiny",
-                       "ows4R",
                        "jagsUI",
                        "bs4Dash",
                        "shinythemes",
                        "shinyjs",
                        "shinycssloaders",
                        "plotly",
-                       "colorspace"
+                       "colorspace",
+                       "keyring",
+                       "XML",
+                       "httr",
+                       "curl",
+                       "jsonlite",
+                       "ows4R"
                        
                        
 )
