@@ -21,6 +21,9 @@ COPY . /home/rstudio/vegetation_donana
 # Set the working directory
 WORKDIR /home/rstudio/vegetation_donana
 
+# Install necessary R packages first
+RUN Rscript -e "install.packages('reticulate', repos='http://cran.rstudio.com/')"
+
 # Install necessary R packages before starting the container
 RUN Rscript load_packages.R
 
