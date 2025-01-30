@@ -27,9 +27,11 @@ RUN Rscript -e "install.packages('reticulate', repos='http://cran.rstudio.com/')
 # Install necessary R packages before starting the container
 RUN Rscript load_packages.R
 
-# Set the default command to run an R script when the container starts
+# Set the default command to run the Shiny app when the container starts
 CMD ["Rscript", "app.R"]
 
+# Expose the Shiny app port
+EXPOSE 3838
 
 # RUN Rscript main_analyses_donana.r
 # Install Shiny
