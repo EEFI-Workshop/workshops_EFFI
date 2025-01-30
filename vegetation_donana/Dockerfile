@@ -10,7 +10,10 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libgit2-dev \
     git \
-    curl
+    curl \
+    python3-venv \
+    python3-pip \
+    python3-dev
 
 # Copy the R scripts and data files into the container
 COPY . /home/rstudio/vegetation_donana
