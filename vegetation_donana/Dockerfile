@@ -22,7 +22,7 @@ WORKDIR /home/rstudio/vegetation_donana
 RUN Rscript load_packages.R
 
 # Set the default command to run an R script when the container starts
-CMD ["Rscript", "load_packages.R"]
+CMD ["Rscript", "app.R"]
 
 
 # RUN Rscript main_analyses_donana.r
