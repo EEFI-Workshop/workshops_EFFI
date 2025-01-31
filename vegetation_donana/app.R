@@ -10,9 +10,9 @@ library(colorspace)
 library(here)
 
 options(warn = -1)
-ndvi_plot <- readRDS(here("vegetation_donana", "ndvi_plot.rds"))
-ndvi_processed_raw <- readRDS(here("vegetation_donana", "ndvi_processed.rds"))
-shrub_data <- read.csv(here("vegetation_donana", "shrub_number.csv"))
+ndvi_plot <- readRDS(here("ndvi_plot.rds"))
+ndvi_processed_raw <- readRDS(here("ndvi_processed.rds"))
+shrub_data <- read.csv(here("shrub_number.csv"))
 colnames(shrub_data)[5:7]=c("adults","saplings","seedlings")
 observed_totals <- readRDS(here("vegetation_donana","observed_totals.rds"))
 
@@ -245,7 +245,7 @@ server <- function(input, output, session) {
   
   # Shrub Plot
   output$shrub_pred_plot <- renderPlotly({
-    shrub_pred_data = readRDS(paste0(here("vegetation_donana", "model_runs/"),
+    shrub_pred_data = readRDS(paste0(here("model_runs/"),
                                  paste(c("model_predictions", 
                                     input$shrub_pred_metric,
                                     input$shrub_pred_scenario,
@@ -254,7 +254,7 @@ server <- function(input, output, session) {
                                     collapse = "_"), ".rds"))%>%
       filter(species == input$shrub_pred_species)
     
-     shrub_mse_data = readRDS(paste0(here("vegetation_donana", "model_runs/"),
+     shrub_mse_data = readRDS(paste0(here("model_runs/"),
                                     paste(c("model_mse", 
                                             input$shrub_pred_metric,
                                             input$shrub_pred_scenario,

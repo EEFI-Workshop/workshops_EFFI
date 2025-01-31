@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
 COPY . /home/rstudio/vegetation_donana
 
 # Set the working directory
-WORKDIR /home/rstudio
+WORKDIR /home/rstudio/vegetation_donana
 
 # Install necessary R packages first
 RUN Rscript -e "install.packages('reticulate', repos='http://cran.rstudio.com/')"
