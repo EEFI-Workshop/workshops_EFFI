@@ -28,7 +28,7 @@ RUN Rscript -e "install.packages('reticulate', repos='http://cran.rstudio.com/')
 RUN Rscript load_packages.R
 
 # Set the default command to run the Shiny app when the container starts
-CMD ["Rscript", "app.R"]
+CMD ["Rscript", "workflow.R"]
 
 # Expose the Shiny app port
 EXPOSE 3838
