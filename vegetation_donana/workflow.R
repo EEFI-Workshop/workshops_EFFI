@@ -4,7 +4,7 @@ library(here)
 here()
 
 # Load all packages for the analysis ----
-source(here("vegetation_donana", "load_packages.R"))
+source(here("load_packages.R"))
 
 # If you want to run the app locally: ----
 runApp('vegetation_donana')
@@ -12,28 +12,28 @@ runApp('vegetation_donana')
 # If you want to perform the analysis yourself: -----
 
 ## Get NDVI rasters and get NDVI time-series for the shrub plots ----
-if(!file.exists(here("vegetation_donana", "df.ndvi.csv"))){
-  source(here("vegetation_donana", "process_ndvi.R"))
+if(!file.exists(here("df.ndvi.csv"))){
+  source(here("process_ndvi.R"))
 }else{
   cat("NDVI is already processed.")
 }
 
 ## Get NDVI metric calculations ----
-if(!file.exists(here("vegetation_donana", "ndvi_metrics.csv"))){
-  source(here("vegetation_donana", "ndvi_indices_calculations.R"))
+if(!file.exists(here("ndvi_metrics.csv"))){
+  source(here("ndvi_indices_calculations.R"))
 }else{
   cat("NDVI metrics are already calculated.")
 }
 
 ## Get climate data, future climate data and predict NDVI in the future ----
-if(!file.exists(here("vegetation_donana", "ndvi_predictions.rds"))){
-  source(here("vegetation_donana", "ndvi_predictions.R"))
+if(!file.exists(here("ndvi_predictions.rds"))){
+  source(here("ndvi_predictions.R"))
 }else{
   cat("NDVI predictions are already calculated.")
 }
 
 ## Forecast shrub abundances with NDVI predictions ----
-source(here("vegetation_donana", "run_predictions_shrubs.R"))
+source(here("run_predictions_shrubs.R"))
 
 ## Run a single model ----
 run_eg = run_model_combination(ndvi_metric = "integrated_ndvi", # NDVI metric as the explanatory variable for the shrub model
@@ -44,9 +44,9 @@ run_eg = run_model_combination(ndvi_metric = "integrated_ndvi", # NDVI metric as
 
 ## Run all the model combinations ----
 
-if(!file.exists(here("vegetation_donana", "observed_totals.rds"))){
+if(!file.exists(here("observed_totals.rds"))){
 # Load future observations data
-num_fut <- read.csv(here("vegetation_donana", "shrub_number_2324.csv"), sep=" ")
+num_fut <- read.csv(here("shrub_number_2324.csv"), sep=" ")
 colnames(num_fut)[4:6] <- c("adults", "saplings", "seedlings")
 sub_fut <- num_fut[num_fut$species %in% c("Halimium halimifolium", "Lavandula stoechas"), ]
 
@@ -74,9 +74,9 @@ observed_totals <- rbind(
 )
 
 # Save observed data
-saveRDS(observed_totals, file = here("vegetation_donana", "observed_totals.rds"))
+saveRDS(observed_totals, file = here("observed_totals.rds"))
 }else{
-  observed_totals = readRDS(here("vegetation_donana", "observed_totals.rds"))
+  observed_totals = readRDS(here("observed_totals.rds"))
 }
 
 # Define parameter combinations - predictions and forecasting skill are saved to "model_runs".
@@ -99,7 +99,7 @@ for(metric in ndvi_metrics) {
     for(bio in bioclims) {
       for(mod in models) {
         
-        pred_file = here("vegetation_donana", "model_runs",
+        pred_file = here("model_runs",
                          sprintf("model_predictions_%s_%s_%s_%s.rds", 
                                  metric, scen, bio, mod))
         
@@ -141,11 +141,11 @@ for(metric in ndvi_metrics) {
             
             # Save individual run results
             saveRDS(shrub_predictions, 
-                    file = here("vegetation_donana", "model_runs",
+                    file = here("model_runs",
                                 sprintf("model_predictions_%s_%s_%s_%s.rds", 
                                         metric, scen, bio, mod)))
             saveRDS(shrub_mse, 
-                    file = here("vegetation_donana", "model_runs",
+                    file = here("model_runs",
                                 sprintf("model_mse_%s_%s_%s_%s.rds", 
                                         metric, scen, bio, mod)))
           }
