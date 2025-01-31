@@ -287,7 +287,7 @@ server <- function(input, output, session) {
   
 }
 
-# Run the app
+# Run the apptest
 # shinyApp(ui = ui, server = server)
 # Run the app
 shinyApp(
