@@ -31,11 +31,6 @@ jobs:
     - name: Check if Docker is installed
       run: docker --version
 
-    - name: Install Docker
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y docker.io
-
     - name: Build Docker image
       run: |
         cd /home/runner/work/workshops_EFFI/workshops_EFFI/vegetation_donana
