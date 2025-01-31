@@ -47,9 +47,17 @@ jobs:
     - name: Load Docker image and run container on server
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@ec2-13-61-146-74.eu-north-1.compute.amazonaws.com << 'EOF'
+          # Stop and remove the container if it exists
           docker stop vegetation_donana_container || true
           docker rm vegetation_donana_container || true
+          
+          # Remove the existing image if it exists
+          docker rmi -f vegetation_donana_image || true
+
+          # Load the new image
           docker load -i /home/ec2-user/vegetation_donana_image.tar
+
+          # Run the container
           docker run -d -p 3840:3838 --name vegetation_donana_container vegetation_donana_image
         EOF
 
