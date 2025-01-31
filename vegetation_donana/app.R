@@ -14,7 +14,7 @@ ndvi_plot <- readRDS(here("ndvi_plot.rds"))
 ndvi_processed_raw <- readRDS(here("ndvi_processed.rds"))
 shrub_data <- read.csv(here("shrub_number.csv"))
 colnames(shrub_data)[5:7]=c("adults","saplings","seedlings")
-observed_totals <- readRDS(here("vegetation_donana","observed_totals.rds"))
+observed_totals <- readRDS(here("observed_totals.rds"))
 
 # UI
 ui <- bs4DashPage(
