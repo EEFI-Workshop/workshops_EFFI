@@ -41,7 +41,7 @@ jobs:
       - name: Set Docker image and container name
         id: docker_image_name
         run: |
-          if [["${{ github.event.pull_request.merged }}" == 'true' ]]; then
+          if [[ "${{ github.event.pull_request.merged }}" == 'true' ]]; then
             echo "IMAGE_NAME=vegetation_donana_image" >> $GITHUB_ENV
             echo "CONTAINER_NAME=vegetation_donana_container" >> $GITHUB_ENV
             echo "PORT=3840" >> $GITHUB_ENV
@@ -54,7 +54,7 @@ jobs:
       - name: Build Docker image
         run: |
           cd /home/runner/work/workshops_EFFI/workshops_EFFI/vegetation_donana
-          docker buildx build --no-cache -t ${{ env.IMAGE_NAME }} .
+          docker build -t ${{ env.IMAGE_NAME }} .
       # .tar is a file which can be transported to remote server in our cas to aws server
     # -o means output saving outpus as vegetation_donana_image.tar
       - name: Save Docker image to tar file
