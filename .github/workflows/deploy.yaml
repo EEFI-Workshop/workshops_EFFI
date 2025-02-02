@@ -67,7 +67,7 @@ jobs:
     - name: Load Docker image and run container on server
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@ec2-13-61-146-74.eu-north-1.compute.amazonaws.com << 'EOF'
-      # Stop and remove the container if it exists
+          # Stop and remove the container if it exists
           docker stop ${{ env.CONTAINER_NAME }} || true
           docker rm ${{ env.CONTAINER_NAME }} || true
           
