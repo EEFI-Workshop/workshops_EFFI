@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
 
 jobs:
   deploy:
@@ -36,15 +37,28 @@ jobs:
 # we use docker because it is easy to use and we can use neon image with all useful packages and its dependencies
 # -t is only tagging-giving name to the image in our case vegetaation_donana_image
 # | the pipe symbol is use to run multiple commands in one step
+    - name: Set Docker image and container name
+      id: docker_image_name
+      run: |
+        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          echo "IMAGE_NAME=vegetation_donana_image" >> $GITHUB_ENV
+          echo "CONTAINER_NAME=vegetation_donana_container" >> $GITHUB_ENV
+          echo "PORT=3840" >> $GITHUB_ENV
+        elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+          echo "IMAGE_NAME=vegetation_donana_image_test" >> $GITHUB_ENV
+          echo "CONTAINER_NAME=vegetation_donana_container_test" >> $GITHUB_ENV
+          echo "PORT=3839" >> $GITHUB_ENV
+        fi
+
     - name: Build Docker image
       run: |
         cd /home/runner/work/workshops_EFFI/workshops_EFFI/vegetation_donana
-        docker build -t vegetation_donana_image .
+        docker build -t ${{ env.IMAGE_NAME }} .
       # .tar is a file which can be transported to remote server in our cas to aws server
 # -o means output saving outpus as vegetation_donana_image.tar
     - name: Save Docker image to tar file
       run: |
-        docker save vegetation_donana_image -o vegetation_donana_image.tar
+        docker save ${{ env.IMAGE_NAME }} -o vegetation_donana_image.tar
 
 # scp will copy our .tar file to the aws server from github action server
     - name: Copy Docker image tar file to server
@@ -55,17 +69,17 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no ubuntu@ec2-13-61-146-74.eu-north-1.compute.amazonaws.com << 'EOF'
       # Stop and remove the container if it exists
-          docker stop vegetation_donana_container || true
-          docker rm vegetation_donana_container || true
+          docker stop ${{ env.CONTAINER_NAME }} || true
+          docker rm ${{ env.CONTAINER_NAME }} || true
           
           # Remove the existing image if it exists
-          docker rmi -f vegetation_donana_image || true
+          docker rmi -f ${{ env.IMAGE_NAME }} || true
 
           # Load the new image
           docker load -i /home/ec2-user/vegetation_donana_image.tar
 
           # Run the container
-          docker run -d -p 3840:3838 --name vegetation_donana_container vegetation_donana_image
+          docker run -d -p ${{ env.PORT }}:3838 --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE_NAME }}
         EOF
 
 
