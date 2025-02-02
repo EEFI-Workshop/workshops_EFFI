@@ -65,20 +65,23 @@ jobs:
         scp -o StrictHostKeyChecking=no ${{ env.IMAGE_NAME }}.tar ubuntu@ec2-13-61-146-74.eu-north-1.compute.amazonaws.com:/home/ec2-user/
 
     - name: Load Docker image and run container on server
-      run: |
-        ssh -o StrictHostKeyChecking=no ubuntu@ec2-13-61-146-74.eu-north-1.compute.amazonaws.com << 'EOF'
-          # Stop and remove the container if it exists
-          docker stop ${{ env.CONTAINER_NAME }} || true
-          docker rm ${{ env.CONTAINER_NAME }} || true
-          
-          # Remove the existing image if it exists
-          docker rmi -f ${{ env.IMAGE_NAME }} || true
-
-          # Load the new image
-          docker load -i /home/ec2-user/${{ env.IMAGE_NAME }}.tar
-
-          # Run the container
-          docker run -d -p ${{ env.PORT }}:3838 --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE_NAME }}
-        EOF
+    run: |
+      ssh -o StrictHostKeyChecking=no ubuntu@ec2-13-61-146-74.eu-north-1.compute.amazonaws.com << 'EOF'
+        # Stop and remove the container if it exists
+        docker stop ${{ env.CONTAINER_NAME }} || true
+        docker rm ${{ env.CONTAINER_NAME }} || true
+        
+        # Remove the existing image if it exists
+        docker rmi -f ${{ env.IMAGE_NAME }} || true
+  
+        # Load the new image
+        docker load -i /home/ec2-user/${{ env.IMAGE_NAME }}.tar
+  
+        # Run the container
+        docker run -d -p ${{ env.PORT }}:3838 --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE_NAME }}
+  
+        # Delete the Docker image to free up space
+        docker rmi ${{ env.IMAGE_NAME }}
+      EOF
 
 
