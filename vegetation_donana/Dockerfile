@@ -21,6 +21,7 @@ COPY . /home/rstudio/vegetation_donana
 # Set the working directory
 WORKDIR /home/rstudio/vegetation_donana
 
+# RUN commands are executed during the Docker image build process to configure the image environment. They are essential for installing packages, setting up dependencies, and making other modifications that are needed for your application to run correctly inside a container.
 # Install necessary R packages first
 RUN Rscript -e "install.packages('reticulate', repos='http://cran.rstudio.com/')"
 
