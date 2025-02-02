@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - dev
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed    
 
 jobs:
   deploy:
@@ -39,7 +44,7 @@ jobs:
     - name: Set Docker image and container name
       id: docker_image_name
       run: |
-        if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+        if [["${{ github.event.pull_request.merged }}" == 'true' ]]; then
           echo "IMAGE_NAME=vegetation_donana_image" >> $GITHUB_ENV
           echo "CONTAINER_NAME=vegetation_donana_container" >> $GITHUB_ENV
           echo "PORT=3840" >> $GITHUB_ENV
@@ -80,9 +85,6 @@ jobs:
           # Run the container
           docker run -d -p ${{ env.PORT }}:3838 --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE_NAME }}
     
-          # Delete the Docker image to free up space
-          docker rmi ${{ env.IMAGE_NAME }}
-          
           # Delete the tar file to free up space
         rm /home/ec2-user/${{ env.IMAGE_NAME }}.tar
         EOF
