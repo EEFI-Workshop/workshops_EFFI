@@ -24,13 +24,13 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    # - name: Debug workspace
-    #   run: |
-    #     echo "Current working directory:"
-    #     pwd
-    #     echo "Workspace contents:"
-    #     ls -l /home/runner/work/workshops_EFFI/workshops_EFFI/
-    #     ls -l /home/runner/work/workshops_EFFI/workshops_EFFI/vegetation_donana
+     - name: Debug workspace
+       run: |
+         echo "Current working directory:"
+         pwd
+         echo "Workspace contents:"
+         ls -l /home/runner/work/workshops_EFFI/workshops_EFFI/
+         ls -l /home/runner/work/workshops_EFFI/workshops_EFFI/vegetation_donana
 
     # - name: Check if Docker is installed
     #   run: docker --version
@@ -54,7 +54,7 @@ jobs:
     - name: Build Docker image
       run: |
         cd /home/runner/work/workshops_EFFI/workshops_EFFI/vegetation_donana
-        docker build --no-cache -t ${{ env.IMAGE_NAME }} .
+        docker buildx build --no-cache -t ${{ env.IMAGE_NAME }} .
       # .tar is a file which can be transported to remote server in our cas to aws server
 # -o means output saving outpus as vegetation_donana_image.tar
     - name: Save Docker image to tar file
