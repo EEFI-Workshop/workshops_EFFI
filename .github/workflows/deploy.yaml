@@ -18,7 +18,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-    # - name: Install SSH client
+    # - name: Install SSH client test
     #   run: sudo apt-get install -y openssh-client
 
     # take the private key of aws server stored in git hub actions and put it to SSH agent which conects aws server with git hub action server and no more authentication is needed
