@@ -1,4 +1,8 @@
 
+
+#### Dockerfile
+
+
 # A Dockerfile is a text file that contains a set of instructions for
 # building a Docker image. It automates the process of creating a 
 # containerized environment.
@@ -9,6 +13,8 @@
 # 1. You write a Dockerfile with instructions on how to set up your environment.
 # 2. Docker reads the Dockerfile and builds a custom Docker image based on it.
 # 3. You run a container from the built image, which behaves like a lightweight, isolated virtual machine.
+
+#### IMAGE - your set of instructions for container
 
 # FROM → This is the instruction that sets the base image.
 # eco4cast/rocker-neon4cast → This is the Docker image name 
