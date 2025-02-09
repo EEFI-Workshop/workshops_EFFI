@@ -7,7 +7,8 @@ here()
 source(here("load_packages.R"))
 
 # If you want to run the app locally: ----
-runApp('vegetation_donana')
+here::i_am("workflow.R")
+runApp(here())
 
 # If you want to perform the analysis yourself: -----
 
