@@ -43,7 +43,7 @@ run_eg = run_model_combination(ndvi_metric = "integrated_ndvi", # NDVI metric as
                                model = "lm" # Model with which we predict the future NDVI
                                )
 
-## Run all the model combinations ----
+## Run all the model combinations for temporal predictions ----
 
 if(!file.exists(here("observed_totals.rds"))){
 # Load future observations data
@@ -157,6 +157,45 @@ for(metric in ndvi_metrics) {
     }
   }
 }
+
+## Run the models for spatial projections ----
+source(here("run_spatial_predictions.R"))
+ndvi_metrics <- c(
+  "annual_mean",
+  "annual_median", 
+  "integrated_ndvi",
+  "summer_integrated",
+  "summer_max",
+  "summer_mean",
+  "summer_median",
+  "winter_spring_integrated",
+  "winter_spring_max",
+  "winter_spring_mean",
+  "winter_spring_median"
+)
+
+# Create list to store results
+spatial_predictions <- list()
+
+# Run predictions for each metric
+for(metric in ndvi_metrics) {
+  cat(sprintf("\nProcessing %s...\n", metric))
+  
+  # Try to run predictions
+  tryCatch({
+    results <- run_spatial_predictions(metric)
+    
+    # Store results
+    spatial_predictions[[metric]] <- results
+    
+    cat(sprintf("Successfully processed %s\n", metric))
+  }, error = function(e) {
+    cat(sprintf("Error processing %s: %s\n", metric, e$message))
+  })
+}
+
+# Save all predictions to RDS file
+saveRDS(spatial_predictions, file = here("spatial_predictions","spatial_predictions.rds"))
 
 ## Start the shiny app locally ----
 runApp('vegetation_donana')
