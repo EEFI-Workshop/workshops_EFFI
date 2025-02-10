@@ -9,11 +9,11 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
   )
   
   # Load and process NDVI data
-  df.ndvi <- read.csv(here("vegetation_donana", "ndvi_metrics.csv"))
+  df.ndvi <- read.csv(here("ndvi_metrics.csv"))
   df.ndvi <- df.ndvi[,c("plot", "year", ndvi_metric)]
   
   # Load NDVI predictions with specific parameters
-  ndvi_predictions <- readRDS(here("vegetation_donana", "ndvi_predictions.rds"))
+  ndvi_predictions <- readRDS(here("ndvi_predictions.rds"))
   ndvi_predictions <- ndvi_predictions[ndvi_predictions$metric == ndvi_metric, ]
   ndvi_predictions <- ndvi_predictions[ndvi_predictions$scenario == scenario, ]
   ndvi_predictions <- ndvi_predictions[ndvi_predictions$bioclim_vars == bioclim, ]
@@ -26,7 +26,7 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
   
   # num=read_csv(url("https://raw.githubusercontent.com/MariaPaniw/workshops_EFFI/refs/heads/main/vegetation_donana/shrub_number.csv?token=GHSAT0AAAAAAC2TAOO5VDUV3XKSXUPCSRRUZ3RURUA"))
   
-  num <- read.csv(here("vegetation_donana", "shrub_number.csv"))
+  num <- read.csv(here("shrub_number.csv"))
   
   colnames(num)[5:7]=c("adults","saplings","seedlings")
   
@@ -222,7 +222,7 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
                "fit1.data",
                "fit1.pred")
   
-  na <- 10000 ; ni <- 450000 ; nt <- 500 ; nb <- 100000 ; nc <- 3
+  na <- 10000 ; ni <- 450000 ; nt <- 500 ; nb <- 100000 ; nc <- 6
   
   
   out1 <- jags(bdata, inits, params, "abundance change shrubs.txt", n.adapt = na, n.chains = nc,
@@ -235,7 +235,7 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
   # Here we use the abudances for 2022 to predict to 2023 and 2024
   
   # Load shrub abundances at 18 study sites for 2023 and 2024
-  num_fut = read.csv(here("vegetation_donana","shrub_number_2324.csv"), sep=" ")
+  num_fut = read.csv(here("shrub_number_2324.csv"), sep=" ")
   
   colnames(num_fut)[4:6] <- c("adults","saplings","seedlings")
   

@@ -1,7 +1,6 @@
 
     model {
     # Priors
-
     a0.h ~ dnorm( 0 , 1.0E-05 )
     a1.h ~ dnorm( 0 , 1.0E-05 ) 
     a2.h ~ dnorm( 0 , 1.0E-05 )
@@ -13,53 +12,21 @@
     for(i in 1:nsites) { # Loop over sites
     
     #Initial abundance
-    
     N.h[i,1] <- C.hal[i,1]
-    
     N.l[i,1] <- C.lav[i,1]
-  
 
     #Specify the model for years 2 through nYears
-    
     for(t in 1:(nyears-1)) {
     
-    
-# Halimium halimifolium
-
+    # Halimium halimifolium
     n.hal[i,t+1] ~ dpois(N.h[i,t+1])
-
-
     log(N.h[i,t+1]) <- a0.h + a1.h *cov.hal[i,t]  + a2.h * log(N.h[i,t]+0.001) 
  
-# Lavandula stoechas 
-
+    # Lavandula stoechas 
     n.lav[i,t+1] ~ dpois(N.l[i,t+1])
- 
-     log(N.l[i,t+1]) <- a0.l + a1.l *cov.lav[i,t]  + a2.l * log(N.l[i,t]+0.001) 
-  
-
-    # # Goodness of fit
-
-    n.pred[i,t+1] ~ dpois(N.h[i,t+1]) # Part 2 of HM
-    e1[i,t+1] <- N.h[i,t+1]
-    resid1[i,t+1] <- pow(pow(n.hal[i,t+1], 0.5) - pow(e1[i,t+1], 0.5), 2)
-    resid1.pred[i,t+1] <- pow(pow(n.pred[i,t+1], 0.5) - pow(e1[i,t+1], 0.5), 2)
+    log(N.l[i,t+1]) <- a0.l + a1.l *cov.lav[i,t]  + a2.l * log(N.l[i,t]+0.001) 
 
     }
-
     }
-     
-    fit1.data <- sum(resid1[,2:nyears]) # Fit statistic 
-    fit1.pred <- sum(resid1.pred[,2:nyears])
-    
-    for( t in 2:nyears){
-    Ntot.h[t] <- sum(N.h[,t])
-   
-    
-    Ntot.l[t] <- sum(N.l[,t])
-    
-    
     }
-    
-}
     
