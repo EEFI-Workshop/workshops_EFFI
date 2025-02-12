@@ -9,11 +9,11 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
   )
   
   # Load and process NDVI data
-  df.ndvi <- read.csv(here("vegetation_donana", "ndvi_metrics.csv"))
+  df.ndvi <- read.csv(here("ndvi_metrics.csv"))
   df.ndvi <- df.ndvi[,c("plot", "year", ndvi_metric)]
   
   # Load NDVI predictions with specific parameters
-  ndvi_predictions <- readRDS(here("vegetation_donana", "ndvi_predictions.rds"))
+  ndvi_predictions <- readRDS(here("ndvi_predictions.rds"))
   ndvi_predictions <- ndvi_predictions[ndvi_predictions$metric == ndvi_metric, ]
   ndvi_predictions <- ndvi_predictions[ndvi_predictions$scenario == scenario, ]
   ndvi_predictions <- ndvi_predictions[ndvi_predictions$bioclim_vars == bioclim, ]
@@ -26,7 +26,7 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
   
   # num=read_csv(url("https://raw.githubusercontent.com/MariaPaniw/workshops_EFFI/refs/heads/main/vegetation_donana/shrub_number.csv?token=GHSAT0AAAAAAC2TAOO5VDUV3XKSXUPCSRRUZ3RURUA"))
   
-  num <- read.csv(here("vegetation_donana", "shrub_number.csv"))
+  num <- read.csv(here("shrub_number.csv"))
   
   colnames(num)[5:7]=c("adults","saplings","seedlings")
   
@@ -235,7 +235,7 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
   # Here we use the abudances for 2022 to predict to 2023 and 2024
   
   # Load shrub abundances at 18 study sites for 2023 and 2024
-  num_fut = read.csv(here("vegetation_donana","shrub_number_2324.csv"), sep=" ")
+  num_fut = read.csv(here("shrub_number_2324.csv"), sep=" ")
   
   colnames(num_fut)[4:6] <- c("adults","saplings","seedlings")
   
@@ -270,9 +270,9 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
   n.hal.pred = array(NA, c(length(par.sub), n.plots, n.years.pred))
   n.lav.pred = array(NA, c(length(par.sub), n.plots, n.years.pred))
   
-  # Arrays for deviance (only 2 years - matching observed data)
-  deviance.hal = array(NA, c(length(par.sub), n.plots, n.years.obs))
-  deviance.lav = array(NA, c(length(par.sub), n.plots, n.years.obs))
+  # Arrays for MSE (only for observation years - 2023 and 2024)
+  mse.hal = array(NA, c(length(par.sub), n.plots, n.years.obs))
+  mse.lav = array(NA, c(length(par.sub), n.plots, n.years.obs))
   
   for(x in 1:length(par.sub)){
     for(i in 1:n.plots) {
@@ -289,14 +289,15 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
         
         n.hal.pred[x,i,t] <- rpois(1,N.h)
         
-        # Calculate deviance only for years with observed data
+        # Calculate MSE only for observation years (2023-2024)
         if(t <= n.years.obs) {
+          current_year <- 2022 + t
           ad.obs.hal = sub_fut$adults[sub_fut$species=="Halimium halimifolium" &
-                                        sub_fut$year==unique(sub_fut$year)[t] &
-                                        sub_fut$plot==unique(sub_fut$plot)[i]]
+                                        sub_fut$year == current_year &
+                                        sub_fut$plot == unique(sub_fut$plot)[i]]
           
-          if(n.hal.pred[x,i,t]>0 & length(ad.obs.hal)>0){
-            deviance.hal[x,i,t] = (ad.obs.hal - n.hal.pred[x,i,t])^2
+          if(length(ad.obs.hal) > 0){
+            mse.hal[x,i,t] = (ad.obs.hal - n.hal.pred[x,i,t])^2
           }
         }
         
@@ -307,125 +308,65 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
         
         n.lav.pred[x,i,t] <- rpois(1,N.l)
         
-        # Calculate deviance only for years with observed data
+        # Calculate MSE only for observation years (2023-2024)
         if(t <= n.years.obs) {
+          current_year <- 2022 + t
           ad.obs.lav = sub_fut$adults[sub_fut$species=="Lavandula stoechas" &
-                                        sub_fut$year==unique(sub_fut$year)[t] &
-                                        sub_fut$plot==unique(sub_fut$plot)[i]]
+                                        sub_fut$year == current_year &
+                                        sub_fut$plot == unique(sub_fut$plot)[i]]
           
-          if(n.lav.pred[x,i,t]>0 & length(ad.obs.lav)>0){
-            deviance.lav[x,i,t] = (ad.obs.lav - n.lav.pred[x,i,t])^2
+          if(length(ad.obs.lav) > 0){
+            mse.lav[x,i,t] = (ad.obs.lav - n.lav.pred[x,i,t])^2
           }
         }
       }
     }
   }
   
-  
-  ### Forecast skill as mean square error:
-  
-  MSE.Hal=apply(deviance.hal,c(1),sum,na.rm=T) # uncertainty due to posterior samples kept
-  hist(MSE.Hal)
-  
-  MSE.Lav=apply(deviance.lav,c(1),sum,na.rm=T) # uncertainty due to posterior samples kept
-  hist(MSE.Lav)
-  
-  ### PLOTS
-  ### Prepare the data for plotting 
-  
-  n.hal.tot.pred=apply(n.hal.pred,c(1,3),sum)
-  
-  n.lav.tot.pred=apply(n.lav.pred,c(1,3),sum)
-  
-  ## Halimium
-  df.pred = data.frame(
-    N = as.numeric(n.hal.tot.pred),
-    year = rep(c(2023:2026), each=dim(n.hal.tot.pred)[1]),  # Extended to 2026 to match n.years.pred=4
-    sim = 1:dim(n.hal.tot.pred)[1]
+  # Create prediction dataframes with MSE
+  halimium_predictions <- data.frame(
+    N = as.vector(n.hal.pred),
+    mse = NA,  # Initialize all MSE as NA
+    year = rep(rep(2023:2026, each=n.plots), length(par.sub)),
+    plot = rep(rep(1:n.plots, times=n.years.pred), length(par.sub)),
+    sim = rep(1:length(par.sub), each=n.plots*n.years.pred),
+    metric = ndvi_metric,
+    scenario = scenario,
+    bioclim = bioclim,
+    model = model,
+    species = "Halimium halimifolium"
   )
   
-  hal.tot=aggregate(adults~year,data=sub_fut[sub_fut$species=="Halimium halimifolium",],function(x) sum(x,na.rm=T))
-  hal.tot$sim=NA
-  hal.tot$tot=hal.tot$adults
-  hal.tot$year=as.numeric(as.character(hal.tot$year))
+  # Only fill in MSE for 2023-2024 for Halimium
+  obs_rows_hal <- halimium_predictions$year <= 2024
+  halimium_predictions$mse[obs_rows_hal] <- as.vector(mse.hal)
   
-  # a.pred=ggplot(df.pred,aes(year,N,group=sim))+
-  #   geom_line(alpha=0.1)+
-  #   geom_point(data=hal.tot, aes(year,tot),size=3,col="blue")+
-  #   # scale_color_viridis(discrete = T,option="A")+
-  #   xlab("Year")+ylab("Abundance")+theme_bw(base_size=20)+
-  #   theme(panel.grid = element_blank())+
-  #   ggtitle("Halimium halimifolium")+
-  #   theme(panel.grid.major = element_blank(),
-  #         panel.grid.minor = element_blank(),
-  #         strip.background = element_blank(),
-  #         panel.border = element_rect(colour = "black"),
-  #         legend.position = "none",
-  #         legend.title = element_blank())+
-  #   scale_x_continuous(breaks=c(2023:2026))
-  # 
-  # a.pred
-  
-  ## Lavandula
-  df.pred = data.frame(
-    N = as.numeric(n.hal.tot.pred),
-    year = rep(c(2023:2026), each=dim(n.hal.tot.pred)[1]),  # Extended to 2026 to match n.years.pred=4
-    sim = 1:dim(n.hal.tot.pred)[1]
+  lavandula_predictions <- data.frame(
+    N = as.vector(n.lav.pred),
+    mse = NA,  # Initialize all MSE as NA
+    year = rep(rep(2023:2026, each=n.plots), length(par.sub)),
+    plot = rep(rep(1:n.plots, times=n.years.pred), length(par.sub)),
+    sim = rep(1:length(par.sub), each=n.plots*n.years.pred),
+    metric = ndvi_metric,
+    scenario = scenario,
+    bioclim = bioclim,
+    model = model,
+    species = "Lavandula stoechas"
   )
   
-  lav.tot=aggregate(adults~year,data=sub_fut[sub_fut$species=="Lavandula stoechas",],function(x) sum(x,na.rm=T))
-  lav.tot$sim=NA
-  lav.tot$tot=lav.tot$adults
-  lav.tot$year=as.numeric(as.character(lav.tot$year))
-  
-  # b.pred=ggplot(df.pred,aes(year,N,group=sim))+
-  #   geom_line(alpha=0.1)+
-  #   geom_point(data=lav.tot, aes(year,tot),size=3,col="blue")+
-  #   # scale_color_viridis(discrete = T,option="A")+
-  #   xlab("Year")+ylab("Abundance")+theme_bw(base_size=20)+
-  #   theme(panel.grid = element_blank())+
-  #   ggtitle("Lavandula stoechas")+
-  #   theme(panel.grid.major = element_blank(),
-  #         panel.grid.minor = element_blank(),
-  #         strip.background = element_blank(),
-  #         panel.border = element_rect(colour = "black"),
-  #         legend.position = "none",
-  #         legend.title = element_blank())+
-  #   scale_x_continuous(breaks=c(2023:2026))
-  # 
-  # b.pred
-  
+  # Only fill in MSE for 2023-2024 for Lavandula
+  obs_rows_lav <- lavandula_predictions$year <= 2024
+  lavandula_predictions$mse[obs_rows_lav] <- as.vector(mse.lav)
   
   # Create results list
   results <- list(
     parameters = params,
     predictions = list(
-      halimium = data.frame(
-        N = as.numeric(n.hal.tot.pred),
-        year = rep(c(2023:2026), each=dim(n.hal.tot.pred)[1]),
-        sim = 1:dim(n.hal.tot.pred)[1],
-        metric = ndvi_metric,
-        scenario = scenario,
-        bioclim = bioclim,
-        model = model,
-        species = "Halimium halimifolium"
-      ),
-      lavandula = data.frame(
-        N = as.numeric(n.lav.tot.pred),
-        year = rep(c(2023:2026), each=dim(n.lav.tot.pred)[1]),
-        sim = 1:dim(n.lav.tot.pred)[1],
-        metric = ndvi_metric,
-        scenario = scenario,
-        bioclim = bioclim,
-        model = model,
-        species = "Lavandula stoechas"
-      )
-    ),
-    mse = list(
-      halimium = MSE.Hal,
-      lavandula = MSE.Lav
+      halimium = halimium_predictions,
+      lavandula = lavandula_predictions
     )
   )
   
   return(results)
-}
+  
+}  

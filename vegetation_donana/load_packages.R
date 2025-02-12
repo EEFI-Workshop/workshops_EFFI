@@ -55,7 +55,8 @@ required_packages <- c("tidyverse",
                        "httr",
                        "curl",
                        "jsonlite",
-                       "ows4R"
+                       "ows4R",
+                       "tidyterra"
                        
                        
 )
