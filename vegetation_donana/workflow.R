@@ -81,7 +81,7 @@ saveRDS(observed_totals, file = here("observed_totals.rds"))
 }
 
 # Define parameter combinations - predictions and forecasting skill are saved to "model_runs".
-ndvi_metrics <- c("integrated_ndvi", "winter_spring_integrated", "summer_integrated")
+ndvi_metrics <- c("integrated_ndvi", "winter_spring_integrated")
 scenarios <- c("ssp370", "ssp245", "ssp585")
 bioclims <- c("bio1", "bio12", "bio9", "bio18", "bio1_bio12", "bio1_bio9", 
               "bio1_bio18", "bio12_bio9", "bio12_bio18", "bio9_bio18", "bio1_bio12_bio9", 
@@ -89,9 +89,8 @@ bioclims <- c("bio1", "bio12", "bio9", "bio18", "bio1_bio12", "bio1_bio9",
 )
 models <- c("lm", "rf", "gam")
 
-# Create empty lists to store results
+# Create empty list to store results
 all_predictions <- list()
-all_mse <- list()
 counter <- 1
 
 # Run analysis for all combinations
@@ -111,46 +110,19 @@ for(metric in ndvi_metrics) {
           results <- try(run_model_combination(metric, scen, bio, mod))
           
           if(!inherits(results, "try-error")) {
-            # Prepare predictions dataframe
+            # Prepare predictions dataframe (already includes MSE)
             shrub_predictions <- rbind(
               results$predictions$halimium,
               results$predictions$lavandula
             )
             
-            # Prepare MSE dataframe
-            hal_mse_df <- data.frame(
-              metric = metric,
-              scenario = scen,
-              bioclim = bio,
-              model = mod,
-              species = "Halimium halimifolium",
-              sim = 1:length(results$mse$halimium),
-              mse = results$mse$halimium
-            )
-            
-            lav_mse_df <- data.frame(
-              metric = metric,
-              scenario = scen,
-              bioclim = bio,
-              model = mod,
-              species = "Lavandula stoechas",
-              sim = 1:length(results$mse$lavandula),
-              mse = results$mse$lavandula
-            )
-            
-            shrub_mse <- rbind(hal_mse_df, lav_mse_df)
-            
-            # Save individual run results
+            # Save predictions (which now include MSE values)
             saveRDS(shrub_predictions, 
                     file = here("model_runs",
                                 sprintf("model_predictions_%s_%s_%s_%s.rds", 
                                         metric, scen, bio, mod)))
-            saveRDS(shrub_mse, 
-                    file = here("model_runs",
-                                sprintf("model_mse_%s_%s_%s_%s.rds", 
-                                        metric, scen, bio, mod)))
           }
-        }else{
+        } else {
           cat(sprintf("Combination %s, %s, %s, %s\n", metric, scen, bio, mod), " already exists!")
         }
       }

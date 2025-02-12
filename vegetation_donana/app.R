@@ -35,7 +35,9 @@ ui <- bs4DashPage(
       bs4Dash::menuItem("NDVI Data", tabName = "ndvi_data", icon = icon("leaf")),
       bs4Dash::menuItem("Shrub Data", tabName = "shrub_data", icon = icon("tree")),
       bs4Dash::menuItem("NDVI Predictions", tabName = "ndvi_pred", icon = icon("leaf")),
-      bs4Dash::menuItem("Shrub Predictions", tabName = "shrub_pred", icon = icon("tree"))
+      bs4Dash::menuItem("Shrub Predictions", tabName = "shrub_pred", icon = icon("clock")),
+      bs4Dash::menuItem("Shrub Predictions", tabName = "shrub_pred_spatial", icon = icon("map"))
+      
     )
   ),
   
@@ -154,10 +156,57 @@ ui <- bs4DashPage(
               title = "Shrub Prediction Results",
               status = "success",
               plotlyOutput("shrub_pred_plot", height = "600px") %>% withSpinner(type = 8)
+            ),
+            
+            bs4Card(
+              width = 12,
+              title = "Forecasting skill",
+              status = "success",
+              plotlyOutput("shrub_mse_plot", height = "600px") %>% withSpinner(type = 8)
+            )
+          )
+        )
+      ),
+      
+      # Shrub Predictions Tab
+      tabItem(
+        tabName = "shrub_pred_spatial",
+        fluidRow(
+          column(
+            width = 3,
+            bs4Card(
+              width = 12,
+              title = "Select Parameters",
+              status = "success",
+              selectInput("ndvi_spatial_metric", "Choose NDVI metric:",
+                          choices = c("integrated_ndvi", "winter_spring_integrated")),
+              selectInput("shrub_spatial_species", "Choose species variables:",
+                          choices = c("Lavandula stoechas","Halimium halimifolium"),
+                          multiple = FALSE,
+                          selected = "Lavandula stoechas")
+              
+            )
+          ),
+          column(
+            width = 9,
+            bs4Card(
+              width = 12,
+              title = "NDVI indice across the landscape",
+              status = "success",
+              plotlyOutput("ndvi_spatial_plot", height = "600px") %>% withSpinner(type = 8)
+            ),
+            
+            bs4Card(
+              width = 12,
+              title = "Shrub abundance across the landscape",
+              status = "success",
+              plotlyOutput("shrub_spatial_plot", height = "600px") %>% withSpinner(type = 8)
             )
           )
         )
       )
+      
+      
     )
   )
 )
@@ -252,41 +301,107 @@ server <- function(input, output, session) {
                                     paste(input$shrub_pred_climate, collapse = "_"),
                                     input$shrub_pred_model),
                                     collapse = "_"), ".rds"))%>%
-      filter(species == input$shrub_pred_species)
-    
-     shrub_mse_data = readRDS(paste0(here("model_runs/"),
-                                    paste(c("model_mse", 
-                                            input$shrub_pred_metric,
-                                            input$shrub_pred_scenario,
-                                            paste(input$shrub_pred_climate, collapse = "_"),
-                                            input$shrub_pred_model),
-                                          collapse = "_"), ".rds"))%>%
-      filter(species == input$shrub_pred_species)
-    
-    shrub_pred_data = left_join(shrub_pred_data, shrub_mse_data)
+      filter(species == input$shrub_pred_species)%>%
+      group_by(year, sim, metric, scenario, bioclim, model, species)%>%
+      summarize(N = sum(N, na.rm = TRUE))
     
     shrub_observed = 
       observed_totals %>% 
       filter(species == input$shrub_pred_species)%>%
       rename(observed = tot)
     
-
     ggplot(data = shrub_pred_data)+
-      geom_line(aes(year, N, group = sim, color = mse), alpha = 0.1)+
+      geom_line(aes(year, N, group = sim), alpha = 0.1)+
+      stat_summary(aes(x = year, y = N), 
+                   fun = mean, 
+                   geom = "line",
+                   color = "black",
+                   linewidth = 1)+
       geom_point(data=shrub_observed, aes(year, observed), size=3,col="blue")+
       scale_color_viridis_c(direction = -1)+
       xlab("Year")+ylab("Number of adults")+
       theme_minimal(base_size=20)+
       ggtitle(input$shrub_pred_species)+
       theme(legend.position = "bottom")+
-      labs(x = "Year", y = "Number of adults (average accross plots)",
-           color = "Forecasting \nskill (mse)",
-           subtitle = "Blue points show the observed numbers averaged accross plots"
-           )
+      labs(x = "Year", y = "Number of adults across the landscape",
+           subtitle = "Blue points show the observed numbers across the landscape")
   })
   
-}
+  # Shrub forecasting skill
+  output$shrub_mse_plot <- renderPlotly({
+    shrub_pred_data = readRDS(paste0(here("model_runs/"),
+                                     paste(c("model_predictions", 
+                                             input$shrub_pred_metric,
+                                             input$shrub_pred_scenario,
+                                             paste(input$shrub_pred_climate, collapse = "_"),
+                                             input$shrub_pred_model),
+                                           collapse = "_"), ".rds")) %>%
+      filter(species == input$shrub_pred_species) %>%
+      group_by(year, sim, metric, scenario, bioclim, model, species) %>%
+      summarize(mse = median(mse, na.rm = TRUE))
+    
+    p <- ggplot(shrub_pred_data, aes(x = as.factor(year), mse)) +
+      geom_boxplot(outliers = FALSE)+
+      theme_minimal() +
+      labs(
+        title = "Forecasting skill",
+        x = "Year",
+        y = "MSE"
+      ) +
+      theme(
+        plot.title = element_text(size = 14, face = "bold"),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10)
+      )
+    
+    ggplotly(p) %>%
+      layout(
+        showlegend = FALSE,
+        margin = list(t = 50)
+      )
+  })
+  
+  output$ndvi_spatial_plot <- renderPlotly({
+    ndvi_spatial = rast(here("ndvi_metrics_2024", paste0(input$ndvi_spatial_metric, "_2024.tif")))
+    
+    p <- ggplot() +
+      geom_spatraster(data = ndvi_spatial) +
+      scale_fill_gradientn(
+        colors = c("#f7fcf5", "#e5f5e0", "#c7e9c0", "#a1d99b", "#74c476", "#41ab5d", "#238b45", "#006d2c", "#00441b"),
+        na.value = NA
+      ) +
+      theme_minimal()
+    
+    ggplotly(p) %>%
+      layout(
+        showlegend = TRUE,
+        margin = list(t = 50)
+      )
+  })
 
+  output$shrub_spatial_plot <- renderPlotly({
+    sp = ifelse(input$shrub_spatial_species == "Lavandula stoechas", "lavandula", "halimium")
+    shrub_spatial = rast(here("spatial_predictions", paste0(sp,"_", input$ndvi_spatial_metric, ".tif")))
+    
+    violet_gradient = c("#f3e5f5","#6a1b9a")
+    orange_gradient = c("#fff3e0","#ef6c00")
+    
+    p <- ggplot() +
+      geom_spatraster(data = shrub_spatial) +
+      scale_fill_gradient(
+        low = ifelse(sp == "lavandula", violet_gradient[1], orange_gradient[1]),
+        high = ifelse(sp == "lavandula", violet_gradient[2], orange_gradient[2]),
+        na.value = NA
+      ) +
+      theme_minimal()
+    
+    ggplotly(p) %>%
+      layout(
+        showlegend = TRUE,
+        margin = list(t = 50)
+      )
+  })
+}
 # Run the apptest
 # shinyApp(ui = ui, server = server)
 # Run the app

@@ -136,7 +136,7 @@ run_spatial_model <- function(ndvi_metric) {
               "a0.l", "a1.l", "a2.l")
   
   # MCMC settings
-  na <- 10000 ; ni <- 450000 ; nt <- 500 ; nb <- 100000 ; nc <- 6
+  na <- 10000 ; ni <- 450000 ; nt <- 500 ; nb <- 100000 ; nc <- 3
   
   # Run JAGS model
   out1 <- jags(bdata, inits, params, "abundance change shrubs.txt", 
