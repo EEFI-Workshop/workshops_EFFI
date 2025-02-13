@@ -27,7 +27,7 @@ More recently (since 2023), another project, led by Matthew Celments, started sh
 
 ## Forecasting abundance change of shrubs
 
-The rasters (30 by 30 m resolution) we use are provided by the geospatial laboratory (LAST) at EBD CSIC:
+The rasters (10 by 10 m resolution) we use are provided by the geospatial laboratory (LAST) at EBD CSIC:
 
    Díaz-Delgado, R., Afan, I., Aragones, D., Garcia, D., & Bustamante, J. (2019). NDVIs Doñana 1984/2019 (v1.0) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.3518879
 
