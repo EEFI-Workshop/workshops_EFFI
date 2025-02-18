@@ -8,6 +8,8 @@ library(shinycssloaders)
 library(plotly)
 library(colorspace)
 library(here)
+library(terra)
+library(tidyterra)#added to use the rast function
 
 options(warn = -1)
 ndvi_plot <- readRDS(here("ndvi_plot.rds"))
