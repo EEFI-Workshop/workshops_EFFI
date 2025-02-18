@@ -263,6 +263,7 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
     }
   }
   
+  
   # Sample posterior values
   par.sub = sample(1:length(out1$sims.list$a0.h), 1000)
   
@@ -271,8 +272,8 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
   n.lav.pred = array(NA, c(length(par.sub), n.plots, n.years.pred))
   
   # Arrays for MSE (only for observation years - 2023 and 2024)
-  mse.hal = array(NA, c(length(par.sub), n.plots, n.years.obs))
-  mse.lav = array(NA, c(length(par.sub), n.plots, n.years.obs))
+  mse.hal = array(NA, c(length(par.sub), n.years.obs))  # Changed dimensions to track only by year
+  mse.lav = array(NA, c(length(par.sub), n.years.obs))
   
   for(x in 1:length(par.sub)){
     for(i in 1:n.plots) {
@@ -289,47 +290,45 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
         
         n.hal.pred[x,i,t] <- rpois(1,N.h)
         
-        # Calculate MSE only for observation years (2023-2024)
-        if(t <= n.years.obs) {
-          current_year <- 2022 + t
-          ad.obs.hal = sub_fut$adults[sub_fut$species=="Halimium halimifolium" &
-                                        sub_fut$year == current_year &
-                                        sub_fut$plot == unique(sub_fut$plot)[i]]
-          
-          if(length(ad.obs.hal) > 0){
-            mse.hal[x,i,t] = (ad.obs.hal - n.hal.pred[x,i,t])^2
-          }
-        }
-        
         # Lavandula predictions
         N.l <- exp(out1$sims.list$a0.l[par.sub[x]] + 
                      out1$sims.list$a1.l[par.sub[x]] * ndvi.pred[i,t] + 
                      out1$sims.list$a2.l[par.sub[x]] * log(N.l+0.001))
         
         n.lav.pred[x,i,t] <- rpois(1,N.l)
-        
-        # Calculate MSE only for observation years (2023-2024)
-        if(t <= n.years.obs) {
-          current_year <- 2022 + t
-          ad.obs.lav = sub_fut$adults[sub_fut$species=="Lavandula stoechas" &
-                                        sub_fut$year == current_year &
-                                        sub_fut$plot == unique(sub_fut$plot)[i]]
-          
-          if(length(ad.obs.lav) > 0){
-            mse.lav[x,i,t] = (ad.obs.lav - n.lav.pred[x,i,t])^2
-          }
-        }
       }
+    }
+    
+    # Calculate landscape-level predictions by summing across plots
+    n.hal.landscape <- apply(n.hal.pred[x,,], 2, sum)
+    n.lav.landscape <- apply(n.lav.pred[x,,], 2, sum)
+    
+    # Calculate MSE only for observation years (2023-2024)
+    for(t in 1:n.years.obs) {
+      current_year <- 2022 + t
+      
+      # Get observed landscape-level totals
+      obs.hal.total <- sum(sub_fut$adults[sub_fut$species=="Halimium halimifolium" &
+                                            sub_fut$year == current_year], na.rm=TRUE)
+      obs.lav.total <- sum(sub_fut$adults[sub_fut$species=="Lavandula stoechas" &
+                                            sub_fut$year == current_year], na.rm=TRUE)
+      
+      # Calculate MSE at landscape level for each year
+      mse.hal[x,t] <- (obs.hal.total - n.hal.landscape[t])^2
+      mse.lav[x,t] <- (obs.lav.total - n.lav.landscape[t])^2
     }
   }
   
+  # Aggregate predictions to landscape level
+  n.hal.tot.pred <- apply(n.hal.pred, c(1,3), sum)
+  n.lav.tot.pred <- apply(n.lav.pred, c(1,3), sum)
+  
   # Create prediction dataframes with MSE
   halimium_predictions <- data.frame(
-    N = as.vector(n.hal.pred),
-    mse = NA,  # Initialize all MSE as NA
-    year = rep(rep(2023:2026, each=n.plots), length(par.sub)),
-    plot = rep(rep(1:n.plots, times=n.years.pred), length(par.sub)),
-    sim = rep(1:length(par.sub), each=n.plots*n.years.pred),
+    N = as.vector(n.hal.tot.pred),
+    year = rep(2023:2026, each=length(par.sub)),
+    sim = rep(1:length(par.sub), times=n.years.pred),
+    mse = c(as.vector(mse.hal), rep(NA, length(par.sub) * (n.years.pred - n.years.obs))),
     metric = ndvi_metric,
     scenario = scenario,
     bioclim = bioclim,
@@ -337,26 +336,17 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
     species = "Halimium halimifolium"
   )
   
-  # Only fill in MSE for 2023-2024 for Halimium
-  obs_rows_hal <- halimium_predictions$year <= 2024
-  halimium_predictions$mse[obs_rows_hal] <- as.vector(mse.hal)
-  
   lavandula_predictions <- data.frame(
-    N = as.vector(n.lav.pred),
-    mse = NA,  # Initialize all MSE as NA
-    year = rep(rep(2023:2026, each=n.plots), length(par.sub)),
-    plot = rep(rep(1:n.plots, times=n.years.pred), length(par.sub)),
-    sim = rep(1:length(par.sub), each=n.plots*n.years.pred),
+    N = as.vector(n.lav.tot.pred),
+    year = rep(2023:2026, each=length(par.sub)),
+    sim = rep(1:length(par.sub), times=n.years.pred),
+    mse = c(as.vector(mse.lav), rep(NA, length(par.sub) * (n.years.pred - n.years.obs))),
     metric = ndvi_metric,
     scenario = scenario,
     bioclim = bioclim,
     model = model,
     species = "Lavandula stoechas"
   )
-  
-  # Only fill in MSE for 2023-2024 for Lavandula
-  obs_rows_lav <- lavandula_predictions$year <= 2024
-  lavandula_predictions$mse[obs_rows_lav] <- as.vector(mse.lav)
   
   # Create results list
   results <- list(
@@ -366,7 +356,4 @@ run_model_combination <- function(ndvi_metric, scenario, bioclim, model) {
       lavandula = lavandula_predictions
     )
   )
-  
-  return(results)
-  
-}  
+}

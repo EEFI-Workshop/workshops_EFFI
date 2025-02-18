@@ -1,6 +1,12 @@
 name: Deploy R Script
 
+# yaml file will be executed on push in dev branch in github or pull in main 
+# branch in github - dev branch is for testing - one all works in dev we can 
+# pull the code to main
 on:
+  push:
+    branches:
+      - billur
   pull_request:
     branches:
       - main
@@ -12,25 +18,25 @@ jobs:
     runs-on: ubuntu-latest
     # checkout@v2 is predifined action in github to checkout - cloning-fetching-configuring the code from the repository
     steps:
-      - name: Checkout repository
+      - name: 1. Checkout repository
         uses: actions/checkout@v2
 
-    # - name: Install SSH client
+    # - name: Install SSH client test
     #   run: sudo apt-get install -y openssh-client
 
     # take the private key of aws server stored in git hub actions and put it to SSH agent which conects aws server with git hub action server and no more authentication is needed
-      - name: Add SSH key
+      - name: 2. Add SSH key
         uses: webfactory/ssh-agent@v0.5.3
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Debug workspace
-        run: |
-          echo "Current working directory:"
-          pwd
-          echo "Workspace contents:"
-          ls -l /home/runner/work/workshops_EFFI/workshops_EFFI/
-          ls -l /home/runner/work/workshops_EFFI/workshops_EFFI/vegetation_donana
+      # - name: 3. Debug workspace
+      #   run: |
+      #     echo "Current working directory:"
+      #     pwd
+      #     echo "Workspace contents:"
+      #     ls -l /home/runner/work/workshops_EFFI/workshops_EFFI/
+      #     ls -l /home/runner/work/workshops_EFFI/workshops_EFFI/vegetation_donana
 
     # - name: Check if Docker is installed
     #   run: docker --version
@@ -38,7 +44,7 @@ jobs:
     # we use docker because it is easy to use and we can use neon image with all useful packages and its dependencies
     # -t is only tagging-giving name to the image in our case vegetaation_donana_image
     # | the pipe symbol is use to run multiple commands in one step
-      - name: Set Docker image and container name
+      - name: 3. Set Docker image and container name
         id: docker_image_name
         run: |
           if [[ "${{ github.event.pull_request.merged }}" == 'true' ]]; then
@@ -51,22 +57,22 @@ jobs:
             echo "PORT=3839" >> $GITHUB_ENV
           fi
 
-      - name: Build Docker image
+      - name: 4. Build Docker image
         run: |
           cd /home/runner/work/workshops_EFFI/workshops_EFFI/vegetation_donana
           docker build -t ${{ env.IMAGE_NAME }} .
       # .tar is a file which can be transported to remote server in our cas to aws server
     # -o means output saving outpus as vegetation_donana_image.tar
-      - name: Save Docker image to tar file
+      - name: 5. Save Docker image to tar file
         run: |
           docker save ${{ env.IMAGE_NAME }} -o ${{ env.IMAGE_NAME }}.tar
 
     # scp will copy our .tar file to the aws server from github action server
-      - name: Copy Docker image tar file to server
+      - name: 6. Copy Docker image tar file to AWS server
         run: |
           scp -o StrictHostKeyChecking=no ${{ env.IMAGE_NAME }}.tar ubuntu@ec2-13-61-146-74.eu-north-1.compute.amazonaws.com:/home/ec2-user/
 
-      - name: Load Docker image and run container on server
+      - name: 7. Load Docker image and run container on server
         run: |
           ssh -o StrictHostKeyChecking=no ubuntu@ec2-13-61-146-74.eu-north-1.compute.amazonaws.com << 'EOF'
             # Stop and remove the container if it exists
@@ -77,6 +83,7 @@ jobs:
             docker rmi -f ${{ env.IMAGE_NAME }} || true
       
             # Load the new image
+            # .tar is like .zip but for packages
             docker load -i /home/ec2-user/${{ env.IMAGE_NAME }}.tar
       
             # Run the container

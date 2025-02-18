@@ -317,7 +317,7 @@ server <- function(input, output, session) {
       stat_summary(aes(x = year, y = N), 
                    fun = mean, 
                    geom = "line",
-                   color = "black",
+                   color = "red",
                    linewidth = 1)+
       geom_point(data=shrub_observed, aes(year, observed), size=3,col="blue")+
       scale_color_viridis_c(direction = -1)+
